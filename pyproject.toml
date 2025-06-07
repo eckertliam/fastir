@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "fastir"
+version = "0.1.0"
+description = ""
+authors = ["Liam Eckert <liameckert17@gmail.com>"]
+readme = "README.md"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+polars = "^1.30.0"
+
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+bindings = "pyo3"
+module-name = "fastir"
