@@ -1,20 +1,23 @@
-[tool.poetry]
+[project]
 name = "fastir"
 version = "0.1.0"
 description = ""
-authors = ["Liam Eckert <liameckert17@gmail.com>"]
+authors = [
+    {name = "Liam Eckert",email = "liameckert17@gmail.com"}
+]
 readme = "README.md"
-license = "Apache-2.0"
-
-[tool.poetry.dependencies]
-python = "^3.12"
-polars = "^1.30.0"
+requires-python = ">=3.12"
+dependencies = [
+    "polars (>=1.30.0,<2.0.0)",
+    "llvm-tools @ ./llvm_tools",
+    "datasets (>=3.6.0,<4.0.0)"
+]
 
 
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
-build-backend = "maturin"
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[tool.maturin]
-bindings = "pyo3"
-module-name = "fastir"
+[tool.poetry.group.dev.dependencies]
+notebook = "^7.4.3"
+
