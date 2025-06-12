@@ -10,5 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.25.0", features = ["extension-module"] }
-inkwell = { version = "0.6.0", features = ["llvm18-1"] }
+llvm-ir = { git = "https://github.com/eckertliam/llvm-ir.git", version = "0.11.3", features = ["llvm-18"] }
 rayon = "1.8"
