@@ -90,6 +90,18 @@ impl FnFeatures {
 
     /// Whether the function calls itself
     pub fn is_recursive(&self) -> PyResult<bool> {
-        Ok(self.bb_feats.values().any(|bb| bb.function_calls.contains_key(&self.name)))
+        Ok(self
+            .bb_feats
+            .values()
+            .any(|bb| bb.function_calls.contains_key(&self.name)))
+    }
+
+    /// outgoing call count
+    pub fn outgoing_call_count(&self) -> PyResult<usize> {
+        Ok(self
+            .bb_feats
+            .values()
+            .map(|bb| bb.call_count)
+            .sum::<usize>())
     }
 }
