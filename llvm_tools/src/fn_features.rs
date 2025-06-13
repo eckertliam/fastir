@@ -87,4 +87,9 @@ impl FnFeatures {
             .function_attributes
             .contains(&FunctionAttribute::NoInline))
     }
+
+    /// Whether the function calls itself
+    pub fn is_recursive(&self) -> PyResult<bool> {
+        Ok(self.bb_feats.values().any(|bb| bb.function_calls.contains_key(&self.name)))
+    }
 }
