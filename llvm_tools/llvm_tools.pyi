@@ -1,5 +1,4 @@
 def llvm_inline_pass(bc: bytes) -> bytes: ...
-
 def bc_to_ir(bc: bytes) -> str: ...
 
 class BBFeatures:
@@ -9,13 +8,21 @@ class BBFeatures:
     function_calls: dict[str, int]
     call_count: int
     instruction_count: int
-    
+
     def mem_access_ratio(self) -> float: ...
 
 class FnFeatures:
     name: str
     bb_feats: dict[str, BBFeatures]
-    
+    arg_count: int
+    instruction_count: int
+
+    def has_var_args(self) -> bool: ...
+    def has_inline_hint(self) -> bool: ...
+    def bb_count(self) -> int: ...
+    def has_always_inline(self) -> bool: ...
+    def has_no_inline(self) -> bool: ...
+
 class ModFeatures:
     fn_feats: dict[str, FnFeatures]
     def __init__(self, bc: bytes) -> None: ...
