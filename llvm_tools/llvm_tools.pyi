@@ -1,3 +1,7 @@
+def llvm_inline_pass(bc: bytes) -> bytes: ...
+
+def bc_to_ir(bc: bytes) -> str: ...
+
 class BBFeatures:
     name: str
     histogram: dict[str, int]
@@ -5,6 +9,8 @@ class BBFeatures:
     function_calls: dict[str, int]
     call_count: int
     instruction_count: int
+    
+    def mem_access_ratio(self) -> float: ...
 
 class FnFeatures:
     name: str

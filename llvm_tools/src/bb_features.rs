@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 
-// TODO: implement a function to calculate the ratio of load/store instructions against all others
 // TODO: implement a function to calculate how many branches this block can branch to
 
 use llvm_ir::{BasicBlock, Instruction, Operand};
-use pyo3::pyclass;
+use pyo3::{pyclass, pymethods, PyResult};
 
 #[pyclass]
 #[derive(Clone)]
 pub struct BBFeatures {
+    _basic_block: BasicBlock,
+
     #[pyo3(get)]
     pub name: String,
     #[pyo3(get)]
@@ -32,6 +33,7 @@ impl BBFeatures {
         let call_count = function_calls.values().sum();
         let instruction_count = basic_block.instrs.len();
         Self {
+            _basic_block: basic_block.clone(),
             name,
             histogram,
             opcode_entropy,
@@ -41,6 +43,16 @@ impl BBFeatures {
         }
     }
 }
+
+#[pymethods]
+impl BBFeatures {
+    pub fn mem_access_ratio(&self) -> PyResult<f64> {
+        let load_count: f64 = *self.histogram.get("load").unwrap_or(&0) as f64;
+        let store_count: f64 = *self.histogram.get("store").unwrap_or(&0) as f64;
+        Ok((load_count + store_count) / self.instruction_count as f64)
+    }
+}
+
 
 fn instruction_to_string(instruction: &Instruction) -> &'static str {
     match instruction {
