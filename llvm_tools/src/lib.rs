@@ -2,6 +2,7 @@ mod bb_features;
 mod fn_features;
 mod llvm_sys_wrapper;
 mod mod_features;
+mod inline_analysis;
 
 use pyo3::{prelude::*, types::PyBytes};
 
