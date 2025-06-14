@@ -160,10 +160,10 @@ fn function_calls(bb: &BasicBlock) -> HashMap<String, usize> {
                 Some(operand) => {
                     let callee = if let Operand::LocalOperand { name, .. } = operand {
                         name.to_string()
+                        *calls.entry(name.to_string()).or_insert(0) += 1;
                     } else {
-                        "inline_asm".to_string()
+                        continue;
                     };
-                    *calls.entry(callee).or_insert(0) += 1;
                 }
                 None => {}
             },

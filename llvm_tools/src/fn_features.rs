@@ -13,6 +13,8 @@ pub struct FnFeatures {
     _function: Function,
 
     #[pyo3(get)]
+    pub calls: Vec<String>,
+    #[pyo3(get)]
     /// The name of the function
     pub name: String,
     #[pyo3(get)]
@@ -37,6 +39,10 @@ impl FnFeatures {
                 (bb_feat.name.clone(), bb_feat)
             })
             .collect();
+
+        let calls = bb_feats.values().flat_map(|bb| {
+            bb.function_calls.keys().cloned().collect::<Vec<String>>()
+        }).collect();
         let arg_count = function.parameters.len();
         let instruction_count = bb_feats
             .values()
@@ -44,6 +50,7 @@ impl FnFeatures {
             .sum::<usize>();
         Self {
             _function: function.clone(),
+            calls,
             name,
             bb_feats,
             arg_count,

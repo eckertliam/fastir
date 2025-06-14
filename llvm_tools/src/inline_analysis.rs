@@ -53,7 +53,7 @@ impl InlineAnalysis {
         self.candidates.par_iter().map(f).collect()
     }
 
-    pub fn get_dataframe(&self) -> Result<DataFrame, PolarsError> {
+    fn get_dataframe(&self) -> Result<DataFrame, PolarsError> {
         df!("callee" => self.build_column(|c| c.callee.clone()),
             "caller" => self.build_column(|c| c.caller.clone()),
             "callee_instruction_count" => self.build_column(|c| c.callee_instruction_count as i64),
@@ -71,5 +71,10 @@ impl InlineAnalysis {
             "caller_outgoing_call_count" => self.build_column(|c| c.caller_outgoing_call_count as i64),
             "caller_to_call_instr_ratio" => self.build_column(|c| c.caller_to_call_instr_ratio as f64),
         )
+    }
+
+    pub fn as_bytes(&self) -> Result<Vec<u8>, PolarsError> {
+        let df = self.get_dataframe()?;
+        return Ok(df.serialize_to_bytes());
     }
 }

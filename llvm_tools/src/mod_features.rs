@@ -10,6 +10,8 @@ use crate::fn_features::FnFeatures;
 pub struct ModFeatures {
     #[pyo3(get)]
     pub fn_feats: HashMap<String, FnFeatures>,
+    #[pyo3(get)]
+    pub call_sites: HashMap<String, Vec<String>>,
 }
 
 #[pymethods]
@@ -26,6 +28,9 @@ impl ModFeatures {
                 (stats.name.clone(), stats)
             })
             .collect();
-        Ok(Self { fn_feats })
+        let call_sites = fn_feats.values().map(|func| {
+            (func.name.clone(), func.calls.clone())
+        }).collect();
+        Ok(Self { fn_feats, call_sites })
     }
 }
