@@ -1,1 +1,1 @@
-from .tooling import DataStream
+from .tooling import DataStream, extract_inline_features

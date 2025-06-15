@@ -1,8 +1,8 @@
 mod bb_features;
 mod fn_features;
+mod inline_features;
 mod llvm_sys_wrapper;
 mod mod_features;
-mod inline_analysis;
 
 use pyo3::{prelude::*, types::PyBytes};
 
@@ -11,7 +11,7 @@ use fn_features::FnFeatures;
 use llvm_sys_wrapper::{bitcode_to_ir, run_inline_pass};
 use mod_features::ModFeatures;
 
-use crate::inline_analysis::InlineAnalysis;
+use crate::inline_features::extract_inline_features;
 
 #[pyfunction]
 fn llvm_inline_pass<'py>(py: Python<'py>, bc: Bound<'_, PyBytes>) -> PyResult<Bound<'py, PyBytes>> {
@@ -33,17 +33,11 @@ fn bc_to_ir(bc: Bound<PyBytes>) -> PyResult<String> {
     }
 }
 
-#[pyfunction]
-fn extract_inline_features(bc: Bound<PyBytes>) -> PyResult<Vec<u8>> {
-    let bc = bc.as_bytes();
-    let mod_features = ModFeatures::new(bc);
-    todo!();
-}
-
 #[pymodule]
 fn llvm_tools(_py: Python, m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(llvm_inline_pass, &m)?)?;
     m.add_function(wrap_pyfunction!(bc_to_ir, &m)?)?;
+    m.add_function(wrap_pyfunction!(extract_inline_features, &m)?)?;
     m.add_class::<ModFeatures>()?;
     m.add_class::<FnFeatures>()?;
     m.add_class::<BBFeatures>()?;

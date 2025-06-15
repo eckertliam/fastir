@@ -53,7 +53,6 @@ impl BBFeatures {
     }
 }
 
-
 fn instruction_to_string(instruction: &Instruction) -> &'static str {
     match instruction {
         // Integer binary ops
@@ -156,19 +155,13 @@ fn function_calls(bb: &BasicBlock) -> HashMap<String, usize> {
     let mut calls = HashMap::new();
     for instr in bb.instrs.iter() {
         match instr {
-            Instruction::Call(call) => match call.function.as_ref().right() {
-                Some(operand) => {
-                    let callee = if let Operand::LocalOperand { name, .. } = operand {
-                        name.to_string()
-                        *calls.entry(name.to_string()).or_insert(0) += 1;
-                    } else {
-                        continue;
-                    };
+            Instruction::Call(call) => {
+                if let Some(Operand::LocalOperand { name, .. }) = call.function.as_ref().right() {
+                    *calls.entry(name.to_string()).or_insert(0) += 1;
                 }
-                None => {}
-            },
+            }
             _ => {}
-        };
+        }
     }
     calls
 }

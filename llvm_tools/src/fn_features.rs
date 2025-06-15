@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use llvm_ir::{function::FunctionAttribute, Function};
-use pyo3::{pyclass, pymethods, PyResult};
+use pyo3::pyclass;
 use rayon::prelude::*;
 
 use crate::bb_features::BBFeatures;
@@ -13,7 +13,8 @@ pub struct FnFeatures {
     _function: Function,
 
     #[pyo3(get)]
-    pub calls: Vec<String>,
+    /// (bb_name, callee_name)
+    pub calls: HashSet<(String, String)>,
     #[pyo3(get)]
     /// The name of the function
     pub name: String,
@@ -22,10 +23,31 @@ pub struct FnFeatures {
     pub bb_feats: HashMap<String, BBFeatures>,
     #[pyo3(get)]
     /// The number of arguments the function takes
-    pub arg_count: usize,
+    pub arg_count: u64,
     #[pyo3(get)]
     /// The number of instructions in the function
-    pub instruction_count: usize,
+    pub instruction_count: u64,
+    #[pyo3(get)]
+    /// Whether the function has var args
+    pub has_var_args: bool,
+    #[pyo3(get)]
+    /// Whether the function has the `inlinehint` attribute
+    pub has_inline_hint: bool,
+    #[pyo3(get)]
+    /// The number of basic blocks in the function
+    pub bb_count: u64,
+    #[pyo3(get)]
+    /// Whether the function has the `alwaysinline` attribute
+    pub has_always_inline: bool,
+    #[pyo3(get)]
+    /// Whether the function has the `noinline` attribute
+    pub has_no_inline: bool,
+    #[pyo3(get)]
+    /// Whether the function calls itself
+    pub is_recursive: bool,
+    #[pyo3(get)]
+    /// The number of outgoing calls from the function
+    pub outgoing_call_count: u64,
 }
 
 impl FnFeatures {
@@ -40,14 +62,37 @@ impl FnFeatures {
             })
             .collect();
 
-        let calls = bb_feats.values().flat_map(|bb| {
-            bb.function_calls.keys().cloned().collect::<Vec<String>>()
-        }).collect();
-        let arg_count = function.parameters.len();
+        let calls = bb_feats
+            .values()
+            .flat_map(|bb| {
+                bb.function_calls
+                    .iter()
+                    .map(|(callee_name, _)| (bb.name.clone(), callee_name.clone()))
+            })
+            .collect();
+        let arg_count = function.parameters.len() as u64;
         let instruction_count = bb_feats
             .values()
-            .map(|bb| bb.instruction_count)
-            .sum::<usize>();
+            .map(|bb| bb.instruction_count as u64)
+            .sum::<u64>();
+        let has_var_args = function.is_var_arg;
+        let has_inline_hint = function
+            .function_attributes
+            .contains(&FunctionAttribute::InlineHint);
+        let bb_count = bb_feats.len() as u64;
+        let has_always_inline = function
+            .function_attributes
+            .contains(&FunctionAttribute::AlwaysInline);
+        let has_no_inline = function
+            .function_attributes
+            .contains(&FunctionAttribute::NoInline);
+        let is_recursive = bb_feats
+            .values()
+            .any(|bb| bb.function_calls.contains_key(&name));
+        let outgoing_call_count = bb_feats
+            .values()
+            .map(|bb| bb.call_count as u64)
+            .sum::<u64>();
         Self {
             _function: function.clone(),
             calls,
@@ -55,60 +100,13 @@ impl FnFeatures {
             bb_feats,
             arg_count,
             instruction_count,
+            has_var_args,
+            has_inline_hint,
+            bb_count,
+            has_always_inline,
+            has_no_inline,
+            is_recursive,
+            outgoing_call_count,
         }
-    }
-}
-
-#[pymethods]
-impl FnFeatures {
-    /// Whether the function has variable arguments
-    pub fn has_var_args(&self) -> PyResult<bool> {
-        Ok(self._function.is_var_arg)
-    }
-
-    /// Whether the function has the `inlinehint` attribute
-    pub fn has_inline_hint(&self) -> PyResult<bool> {
-        Ok(self
-            ._function
-            .function_attributes
-            .contains(&FunctionAttribute::InlineHint))
-    }
-
-    /// The number of basic blocks in the function
-    pub fn bb_count(&self) -> PyResult<usize> {
-        Ok(self.bb_feats.len())
-    }
-
-    /// Whether the function has the `alwaysinline` attribute
-    pub fn has_always_inline(&self) -> PyResult<bool> {
-        Ok(self
-            ._function
-            .function_attributes
-            .contains(&FunctionAttribute::AlwaysInline))
-    }
-
-    /// Whether the function has the `noinline` attribute
-    pub fn has_no_inline(&self) -> PyResult<bool> {
-        Ok(self
-            ._function
-            .function_attributes
-            .contains(&FunctionAttribute::NoInline))
-    }
-
-    /// Whether the function calls itself
-    pub fn is_recursive(&self) -> PyResult<bool> {
-        Ok(self
-            .bb_feats
-            .values()
-            .any(|bb| bb.function_calls.contains_key(&self.name)))
-    }
-
-    /// outgoing call count
-    pub fn outgoing_call_count(&self) -> PyResult<usize> {
-        Ok(self
-            .bb_feats
-            .values()
-            .map(|bb| bb.call_count)
-            .sum::<usize>())
     }
 }

@@ -13,4 +13,4 @@ pyo3 = { version = "0.25.0", features = ["extension-module"] }
 llvm-ir = { git = "https://github.com/eckertliam/llvm-ir.git", version = "0.11.3", features = ["llvm-19"] }
 llvm-sys = { package = "llvm-sys", version = "191" }
 rayon = "1.8"
-polars = { version = "0.48.1", features = ["lazy"] }
+polars = { version = "0.48.1", features = ["lazy", "ipc"] }
