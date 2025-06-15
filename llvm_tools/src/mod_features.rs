@@ -18,14 +18,20 @@ pub struct ModFeatures {
 impl ModFeatures {
     fn from_bc(bc: &[u8]) -> Result<Self, String> {
         let module = Module::from_bc_bytes(bc)?;
-        let fn_feats: HashMap<String, FnFeatures> = module
+        // get fn definitions
+        let mut fn_feats: HashMap<String, FnFeatures> = module
             .functions
             .par_iter()
             .map(|func| {
-                let stats = FnFeatures::new(&func);
+                let stats = FnFeatures::from_def(&func);
                 (stats.name.clone(), stats)
             })
             .collect();
+        // get fn declarations
+        fn_feats.extend(module.func_declarations.iter().map(|decl| {
+            let stats = FnFeatures::from_declaration(&decl);
+            (stats.name.clone(), stats)
+        }));
         let call_sites = fn_feats
             .values()
             .flat_map(|func| {

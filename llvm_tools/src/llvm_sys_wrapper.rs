@@ -40,41 +40,22 @@ pub fn run_inline_pass(bc: &[u8]) -> Result<Vec<u8>, String> {
         // build & run only the inliner with the PassBuilder C-API
         let pipeline = CString::new("cgscc(inline)").unwrap();
 
-        // target machine: can be null for target ndependent passes, but create one anyway
-        LLVM_InitializeAllTargetInfos();
-        LLVM_InitializeAllTargets();
-        LLVM_InitializeAllTargetMCs();
-        LLVM_InitializeAllAsmPrinters();
-
-        let triple = LLVMGetDefaultTargetTriple();
-        let mut target = ptr::null_mut();
-        if LLVMGetTargetFromTriple(triple, &mut target, ptr::null_mut()) != 0 {
-            return Err("unknown target triple".into());
-        }
-
-        let tm = LLVMCreateTargetMachine(
-            target,
-            triple,
-            CString::new("").unwrap().as_ptr(),
-            CString::new("").unwrap().as_ptr(),
-            LLVMCodeGenOptLevel::LLVMCodeGenLevelDefault,
-            LLVMRelocMode::LLVMRelocDefault,
-            LLVMCodeModel::LLVMCodeModelDefault,
-        );
-
+        // use null target machine for target-independent inlining pass
         let pb_opts = LLVMCreatePassBuilderOptions();
 
-        let error_ref = LLVMRunPasses(module, pipeline.as_ptr(), tm, pb_opts);
+        let error_ref = LLVMRunPasses(module, pipeline.as_ptr(), ptr::null_mut(), pb_opts);
         if !error_ref.is_null() {
             // get error message from the error reference
             let error_msg = LLVMGetErrorMessage(error_ref);
             let error_str = if !error_msg.is_null() {
-                let cstr = CString::from_raw(error_msg);
-                cstr.to_string_lossy().into_owned()
+                let error_str = std::ffi::CStr::from_ptr(error_msg)
+                    .to_string_lossy()
+                    .into_owned();
+                LLVMDisposeErrorMessage(error_msg);
+                error_str
             } else {
                 "LLVMRunPasses failed with unknown error".to_string()
             };
-            LLVMDisposeErrorMessage(error_msg);
             return Err(error_str);
         }
 
@@ -86,8 +67,6 @@ pub fn run_inline_pass(bc: &[u8]) -> Result<Vec<u8>, String> {
 
         // clean up
         LLVMDisposePassBuilderOptions(pb_opts);
-        LLVMDisposeTargetMachine(tm);
-        LLVMDisposeMessage(triple);
         LLVMDisposeMemoryBuffer(mbuf);
         LLVMDisposeModule(module);
         LLVMContextDispose(ctx);

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 // TODO: implement a function to calculate how many branches this block can branch to
 
-use llvm_ir::{BasicBlock, Instruction, Operand};
+use llvm_ir::{BasicBlock, Instruction, Operand, Constant};
 use pyo3::{pyclass, pymethods, PyResult};
 
 #[pyclass]
@@ -29,8 +29,7 @@ impl BBFeatures {
         let name = basic_block.name.to_string();
         let histogram = bb_histogram(basic_block);
         let opcode_entropy = opcode_entropy(&histogram);
-        let function_calls = function_calls(basic_block);
-        let call_count = function_calls.values().sum();
+        let (function_calls, call_count) = function_calls(basic_block);
         let instruction_count = basic_block.instrs.len();
         Self {
             _basic_block: basic_block.clone(),
@@ -151,17 +150,34 @@ fn opcode_entropy(histogram: &HashMap<String, usize>) -> f64 {
         .sum()
 }
 
-fn function_calls(bb: &BasicBlock) -> HashMap<String, usize> {
+fn function_calls(bb: &BasicBlock) -> (HashMap<String, usize>, usize) {
     let mut calls = HashMap::new();
+    let mut call_count = 0;
     for instr in bb.instrs.iter() {
         match instr {
             Instruction::Call(call) => {
-                if let Some(Operand::LocalOperand { name, .. }) = call.function.as_ref().right() {
-                    *calls.entry(name.to_string()).or_insert(0) += 1;
+                call_count += 1;
+                if let Some(operand) = call.function.as_ref().right() {
+                    let function_name = match operand {
+                        // Direct function call via global reference
+                        Operand::ConstantOperand(constant_ref) => {
+                            match constant_ref.as_ref() {
+                                llvm_ir::Constant::GlobalReference { name, .. } => {
+                                    Some(name.to_string())
+                                }
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    };
+                    
+                    if let Some(name) = function_name {
+                        *calls.entry(name).or_insert(0) += 1;
+                    }
                 }
             }
             _ => {}
         }
     }
-    calls
+    (calls, call_count)
 }
